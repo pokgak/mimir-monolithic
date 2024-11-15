@@ -1,0 +1,14 @@
+apiVersion: v1
+entries:
+  mimir-monolithic:
+  - apiVersion: v2
+    appVersion: r316
+    created: "2024-11-15T06:49:17.854203783Z"
+    description: Grafana Mimir Monolithic
+    digest: ee7c39383442720afb2e83fe75bf384f79cba55a1891b9f9b9503a85aa58b91a
+    kubeVersion: ^1.20.0-0
+    name: mimir-monolithic
+    urls:
+    - https://github.com/pokgak/mimir-monolithic/releases/download/mimir-monolithic-5.6.0-weekly.316/mimir-monolithic-5.6.0-weekly.316.tgz
+    version: 5.6.0-weekly.316
+generated: "2024-11-15T06:49:17.854215525Z"
