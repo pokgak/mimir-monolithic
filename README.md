@@ -10,6 +10,12 @@ All enterprise related features are removed from this chart. This chart also don
 
 This chart doesn't have thorough testing yet so use at your own risk.
 
+## Installation
+
+```
+$ helm repo add pokgak https://pokgak.github.io/mimir-monolithic
+$ helm install pokgak/mimir-monolithic
+
 ## Alternatives
 
 If you don't want to deal with the complicated Mimir configuration, I recommend you to use [VictoriaMetrics](https://www.google.com/search?client=safari&rls=en&q=victoriametrics&ie=UTF-8&oe=UTF-8) instaed tho it doesn't have support for object storage. So, make your own choice.
