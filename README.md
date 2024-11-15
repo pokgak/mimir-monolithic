@@ -15,6 +15,7 @@ This chart doesn't have thorough testing yet so use at your own risk.
 ```
 $ helm repo add pokgak https://pokgak.github.io/mimir-monolithic
 $ helm install pokgak/mimir-monolithic
+```
 
 ## Alternatives
 
