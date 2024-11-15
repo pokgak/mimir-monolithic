@@ -1,0 +1,17 @@
+{{- $usePSP := (eq (include "mimir.rbac.usePodSecurityPolicy" .) "true") }}
+{{- if $usePSP }}
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: {{ include "mimir.fullname" . }}
+  labels:
+    {{- include "mimir.labels" (dict "ctx" .) | nindent 4 }}
+  namespace: {{ .Release.Namespace | quote }}
+rules:
+{{- if $usePSP }}
+- apiGroups:      ['extensions']
+  resources:      ['podsecuritypolicies']
+  verbs:          ['use']
+  resourceNames:  [{{ include "mimir.resourceName" (dict "ctx" .) }}]
+{{- end }}
+{{- end }}

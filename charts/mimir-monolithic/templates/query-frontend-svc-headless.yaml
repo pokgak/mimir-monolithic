@@ -1,0 +1,28 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "mimir.fullname" . }}-query-frontend-headless
+  labels:
+    {{- include "mimir.labels" . | nindent 4 }}
+    prometheus.io/service-monitor: "false"
+    {{- with .Values.service.labels }}
+    {{- toYaml . | nindent 4 }}
+    {{- end }}
+  annotations:
+    {{- toYaml .Values.service.annotations | nindent 4 }}
+  namespace: {{ .Release.Namespace | quote }}
+spec:
+  type: ClusterIP
+  clusterIP: None
+  publishNotReadyAddresses: true
+  ports:
+    - port: {{ include "mimir.serverHttpListenPort" .}}
+      protocol: TCP
+      name: http-metrics
+      targetPort: http-metrics
+    - port: {{ include "mimir.serverGrpcListenPort" . }}
+      protocol: TCP
+      name: grpc
+      targetPort: grpc
+  selector:
+    {{- include "mimir.selectorLabels" . | nindent 4 }}

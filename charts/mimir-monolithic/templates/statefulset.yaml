@@ -1,0 +1,153 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: {{ include "mimir.fullname" . }}
+  labels:
+    {{- include "mimir.labels" . | nindent 4 }}
+  namespace: {{ .Release.Namespace | quote }}
+spec:
+  podManagementPolicy: {{ .Values.podManagementPolicy }}
+  replicas: {{ .Values.replicas }}
+  persistentVolumeClaimRetentionPolicy:
+    whenDeleted: {{ .Values.persistentVolume.whenDeleted }}
+    whenScaled: {{ .Values.persistentVolume.whenScaled }}
+  selector:
+    matchLabels:
+      {{- include "mimir.selectorLabels" . | nindent 6 }}
+  updateStrategy:
+    {{- toYaml .Values.statefulStrategy | nindent 4 }}
+  serviceName: {{ template "mimir.fullname" . }}-headless
+  {{- if .Values.persistentVolume.enabled }}
+  volumeClaimTemplates:
+    - metadata:
+        name: storage
+        {{- if .Values.persistentVolume.annotations }}
+        annotations:
+          {{- toYaml .Values.persistentVolume.annotations | nindent 10 }}
+        {{- end }}
+      spec:
+        {{- $storageClass := default .Values.persistentVolume.storageClass .Values.storageClass }}
+        {{- if $storageClass }}
+        {{- if (eq "-" $storageClass) }}
+        storageClassName: ""
+        {{- else }}
+        storageClassName: {{ $storageClass }}
+        {{- end }}
+        {{- end }}
+        accessModes:
+          {{- toYaml .Values.persistentVolume.accessModes | nindent 10 }}
+        resources:
+          requests:
+            storage: "{{ .Values.persistentVolume.size }}"
+  {{- end }}
+  template:
+    metadata:
+      labels:
+        {{- include "mimir.podLabels" . | nindent 8 }}
+      annotations:
+        {{- include "mimir.podAnnotations" . | nindent 8 }}
+      namespace: {{ .Release.Namespace | quote }}
+    spec:
+      {{- with .Values.schedulerName }}
+      schedulerName: {{ . | quote }}
+      {{- end }}
+      serviceAccountName: {{ template "mimir.serviceAccountName" . }}
+      {{- if .Values.priorityClassName }}
+      priorityClassName: {{ .Values.priorityClassName }}
+      {{- end }}
+      initContainers:
+        {{- toYaml .Values.initContainers | nindent 8 }}
+      nodeSelector:
+        {{- .Values.nodeSelector | toYaml | nindent 8 }}
+      affinity:
+        {{- .Values.affinity | toYaml | nindent 8 }}
+      tolerations:
+        {{- toYaml .Values.tolerations | nindent 8 }}
+      terminationGracePeriodSeconds: {{ .Values.terminationGracePeriodSeconds }}
+      volumes:
+        - name: config
+          {{- include "mimir.configVolume" . | nindent 10 }}
+        - name: runtime-config
+          configMap:
+            name: {{ template "mimir.fullname" . }}-runtime
+        {{- if not .Values.persistentVolume.enabled }}
+        - name: storage
+          emptyDir: {}
+        {{- end }}
+        {{- if .Values.extraVolumes }}
+        {{ toYaml .Values.extraVolumes | nindent 8 }}
+        {{- end }}
+        - name: active-queries
+          emptyDir: {}
+      containers:
+        {{- if .Values.extraContainers }}
+        {{ toYaml .Values.extraContainers | nindent 8 }}
+        {{- end }}
+        - name: mimir
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          args:
+            - "-target=all"
+            - "-config.expand-env=true"
+            - "-config.file=/etc/mimir/mimir.yaml"
+            - "-ingester.ring.instance-availability-zone=zone-default"
+            - "-server.grpc-max-concurrent-streams=500"
+            # When write requests go through distributors via gRPC, we want gRPC clients to re-resolve the distributors DNS
+            # endpoint before the distributor process is terminated, in order to avoid any failures during graceful shutdown.
+            # To achieve it, we set a shutdown delay greater than the gRPC max connection age.
+            - "-server.grpc.keepalive.max-connection-age=60s"
+            - "-server.grpc.keepalive.max-connection-age-grace=5m"
+            - "-server.grpc.keepalive.max-connection-idle=1m"
+            - "-shutdown-delay=90s"
+            {{- range $key, $value := .Values.extraArgs }}
+            - "-{{ $key }}={{ $value }}"
+            {{- end }}
+          volumeMounts:
+            {{- if .Values.extraVolumeMounts }}
+            {{ toYaml .Values.extraVolumeMounts | nindent 12}}
+            {{- end }}
+            - name: config
+              mountPath: /etc/mimir
+            - name: runtime-config
+              mountPath: /var/{{ include "mimir.name" . }}
+            - name: storage
+              mountPath: "/data"
+              {{- if .Values.persistentVolume.subPath }}
+              subPath: {{ .Values.persistentVolume.subPath }}
+              {{- else }}
+              {{- end }}
+            - name: active-queries
+              mountPath: /active-query-tracker
+          ports:
+            - name: http-metrics
+              containerPort: {{ include "mimir.serverHttpListenPort" . }}
+              protocol: TCP
+            - name: grpc
+              containerPort: {{ include "mimir.serverGrpcListenPort" . }}
+              protocol: TCP
+            - name: memberlist
+              containerPort: {{ include "mimir.memberlistBindPort" . }}
+              protocol: TCP
+          livenessProbe:
+            {{- toYaml .Values.livenessProbe | nindent 12 }}
+          readinessProbe:
+            {{- toYaml .Values.readinessProbe | nindent 12 }}
+          resources:
+            {{- toYaml .Values.resources | nindent 12 }}
+          securityContext:
+            {{- toYaml .Values.containerSecurityContext | nindent 12 }}
+          env:
+            {{- with .Values.global.extraEnv }}
+              {{- toYaml . | nindent 12 }}
+            {{- end }}
+            {{- with .Values.env }}
+              {{- toYaml . | nindent 12 }}
+            {{- end }}
+          envFrom:
+            {{- with .Values.global.extraEnvFrom }}
+              {{- toYaml . | nindent 12 }}
+            {{- end }}
+            {{- with .Values.extraEnvFrom }}
+              {{- toYaml . | nindent 12 }}
+            {{- end }}
+---
