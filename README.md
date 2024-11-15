@@ -19,4 +19,4 @@ $ helm install pokgak/mimir-monolithic
 
 ## Alternatives
 
-If you don't want to deal with the complicated Mimir configuration, I recommend you to use [VictoriaMetrics](https://www.google.com/search?client=safari&rls=en&q=victoriametrics&ie=UTF-8&oe=UTF-8) instaed tho it doesn't have support for object storage. So, make your own choice.
+If you don't want to deal with the complicated Mimir configuration, I recommend you to use [VictoriaMetrics](https://victoriametrics.com/) instaed tho it doesn't have support for object storage. So, make your own choice.
