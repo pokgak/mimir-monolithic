@@ -1,6 +1,6 @@
 # README
 
-This helm chart is for deploying a monolithic Mimir instance. It is a fork of the mimir-distributed helm chart. The fork is made because there is no official helm chart for deploying Mimir in monolithic mode.
+This helm chart is for deploying a monolithic Mimir instance. It is a fork of the [mimir-distributed](https://github.com/grafana/mimir/tree/main/operations/helm/charts/mimir-distributed) helm chart. The fork is made because there is no official helm chart for deploying Mimir in monolithic mode.
 
 ## Features removed
 
