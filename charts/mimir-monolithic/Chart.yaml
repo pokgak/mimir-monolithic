@@ -4,3 +4,4 @@ appVersion: r316
 description: "Grafana Mimir Monolithic"
 kubeVersion: ^1.20.0-0
 name: mimir-monolithic
+
